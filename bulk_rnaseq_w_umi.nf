@@ -442,7 +442,7 @@ process multiqc {
 
     publishDir "${projectDir}/analysis/multiqc/", mode : "copy"
 
-    //module 'python/3.6.2'
+    module 'python/3.11.1'
 
     input:
     path(files)
