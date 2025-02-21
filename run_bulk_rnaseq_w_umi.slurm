@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 #partition - defq, bigmem and xtreme
-#SBATCH --job-name=bulk-rnaseq
+#SBATCH --job-name=nf-bulk-rnaseq
 #SBATCH --ntasks=1
 #SBATCH --partition=defq
 #SBATCH --cpus-per-task=1

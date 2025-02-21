@@ -1,10 +1,8 @@
 nextflow.enable.dsl=2
 
 process fastqc {
-    debug true
     tag "${meta.sample_name}"
-    cpus 8
-    memory '16 GB'
+    label "process_low"
 
     publishDir "${projectDir}/analysis/fastqc/"
 
@@ -24,11 +22,8 @@ process fastqc {
 }
 
 process extract_umi {
-    debug true
     tag "${meta.sample_name}"
-
-    cpus 10
-    memory '32 GB'
+    label "process_medium"
 
     publishDir "${launchDir}/analysis/extract_umi"
 
@@ -53,13 +48,10 @@ process extract_umi {
 }
 
 process fastp {
-    debug true
     tag "${meta.sample_name}"
-    // label "universal"
-    cpus 10
-    memory '16 GB'
+    label "process_low"
 
-    publishDir "${launchDir}/analysis/fastp/", mode: "copy"
+    publishDir "${launchDir}/analysis/fastp/"
 
     module 'fastp/0.21.0'
 
@@ -99,13 +91,10 @@ process fastp {
 
 
 process star {
-    //debug true
     tag "${sample_name}"
-    cpus 10
-    memory '72 GB'
-    time "3h"
+    label "memory_medium"
 
-    publishDir "${projectDir}/analysis/star/", mode : "copy"
+    publishDir "${projectDir}/analysis/star/"
 
     module "STAR/2.7.10a"
     module 'samtools/1.16.1'
@@ -151,12 +140,9 @@ process star {
 
 process preseq {
     tag "${sample_name}"
-    cpus 10
-    memory '48 GB'
+    label "process_medium"
 
     publishDir "${projectDir}/analysis/preseq/"
-
-    //module 'preseq/3.2.0'
 
     input:
     tuple val(sample_name), path(bam), val(is_SE)
@@ -182,8 +168,7 @@ process preseq {
 
 process feature_count {
     tag "${sample_name}"
-    cpus 10
-    memory '32 GB'
+    label "process_medium"
 
     publishDir "${projectDir}/analysis/feature_count/"
 
@@ -198,8 +183,11 @@ process feature_count {
 
     script:
     gtf = params.gtf.(params.genome)
+    // feature count option
+    // -B reads mapped both ends only
+    // https://bioinformatics-core-shared-training.github.io/cruk-summer-school-2021/RNAseq/Markdowns/S8_Read_Counts_with_SubRead.html#running-featurecounts
     """
-    /cm/shared/apps/subread/2.0.1/bin/featureCounts -T ${task.cpus} --primary -s 2 -t exon -g gene_id -a ${gtf} -o ${sample_name}_feature_counts.txt ${bam}
+    /cm/shared/apps/subread/2.0.1/bin/featureCounts -T ${task.cpus} --primary -B -s 2 -t exon -g gene_id -a ${gtf} -o ${sample_name}_feature_counts.txt ${bam}
     """
 }
 // process samtools_index {
@@ -226,9 +214,7 @@ process feature_count {
 
 process dedup_umi_tools {
     tag "${sample_name}"
-
-    cpus 10
-    memory '64 GB'
+    label "memory_medium"
 
     publishDir "${projectDir}/analysis/dedup_umi_tools"
 
@@ -254,12 +240,8 @@ process dedup_umi_tools {
 
 
 process qualimap {
-    //debug true
     tag "${sample_name}"
-    time "4h"
-
-    cpus 10
-    memory '64 GB'
+    label "process_medium"
 
     publishDir "${projectDir}/analysis/qualimap/"
 
@@ -298,12 +280,8 @@ process qualimap {
 
 
 process salmon {
-    debug true
     tag "${sample_name}"
-    time "3h"
-
-    cpus 10
-    memory '48 GB'
+    label "process_medium"
 
     module "salmon/1.9"
     publishDir "${projectDir}/analysis/salmon/"
@@ -334,12 +312,8 @@ process salmon {
 
 
 process seqtk {
-    //debug true
     tag "${sample_name}"
-    time "2h"
-
-    cpus 4
-    memory '8 GB'
+    label "process_dual"
 
     publishDir "${projectDir}/analysis/seqtk/"
 
@@ -366,11 +340,8 @@ process seqtk {
 
 
  process sortMeRNA {
-     //debug true
      tag "${sample_name}"
-
-     cpus 8
-     memory '16 GB'
+     label "process_medium"
 
      publishDir "${projectDir}/analysis/sortMeRNA/"
 
@@ -430,12 +401,8 @@ process seqtk {
 
 
 process fastq_screen {
-    //debug true
     tag "${sample_name}"
-    time "2h"
-
-    cpus 8
-    memory '16 GB'
+    label "process_medium"
 
     publishDir "${projectDir}/analysis/fastq_screen"
 
@@ -471,12 +438,7 @@ process fastq_screen {
 
 
 process multiqc {
-    //debug true
-    //tag "Multiqc on the project"
-    time "1h"
-
-    cpus 2
-    memory '2 GB'
+    label "process_dual"
 
     publishDir "${projectDir}/analysis/multiqc/", mode : "copy"
 
@@ -636,8 +598,8 @@ workflow {
     star(fastp.out.trim_reads)
     dedup_umi_tools(star.out.bam_bai)
 
-    preseq(star.out.bam)
-    qualimap(star.out.bam)
+    preseq(dedup_umi_tools.out.dedup_bam)
+    qualimap(star.out.bam_bai)
     feature_count(dedup_umi_tools.out.dedup_bam)
 
     if (params.run_salmon) {
