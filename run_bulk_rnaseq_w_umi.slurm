@@ -10,10 +10,12 @@
 #SBATCH -o mrnaseq.%A.o
 #SBATCH -e mrnaseq.%A.e
 
-module load nextflow/23.0.4.1
+module load nextflow/23.10.0
 module load singularity/3.8.0
+module load java/21.0.6
 
 nextflow run bulk_rnaseq_w_umi.nf -c ./bulk_rnaseq_w_umi_conf/run.config -resume -profile slurm
 
-module unload nextflow/23.0.4.1
+module unload nextflow/23.10.0
 module unload singularity/3.8.0
+module unload java/21.0.6
