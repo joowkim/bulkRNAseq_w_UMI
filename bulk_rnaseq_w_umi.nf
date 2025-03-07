@@ -70,7 +70,6 @@ process fastp {
     -i ${reads[0]} \
     -I ${reads[1]} \
     --thread ${task.cpus} \
-    --qualified_quality_phred 20 \
     -o ${sample_name}_trimmed_R1.fastq.gz \
     -O ${sample_name}_trimmed_R2.fastq.gz \
     --adapter_fasta $adapter \
@@ -81,7 +80,6 @@ process fastp {
     fastp \
     -i ${reads} \
     --thread ${task.cpus} \
-    --qualified_quality_phred 20 \
     -o ${sample_name}_trimmed_R1.fastq.gz \
     --adapter_fasta $adapter \
     --json ${sample_name}.fastp.json
@@ -187,7 +185,7 @@ process feature_count {
     // -B reads mapped both ends only
     // https://bioinformatics-core-shared-training.github.io/cruk-summer-school-2021/RNAseq/Markdowns/S8_Read_Counts_with_SubRead.html#running-featurecounts
     """
-    /cm/shared/apps/subread/2.0.1/bin/featureCounts -T ${task.cpus} --primary -B -s 2 -t exon -g gene_id -a ${gtf} -o ${sample_name}_feature_counts.txt ${bam}
+    /cm/shared/apps/subread/2.0.1/bin/featureCounts -T ${task.cpus} -p --primary -B -s 2 -t exon -g gene_id -a ${gtf} -o ${sample_name}_feature_counts.txt ${bam}
     """
 }
 // process samtools_index {
@@ -326,6 +324,7 @@ process seqtk {
     tuple val(sample_name), path("${sample_name}.subsample.100000.R{1,2}.fq.gz"), val(is_SE), emit: subsample_reads
 
     script:
+
     if(!is_SE) {
     """
     seqtk sample -s 100 ${reads[0]} 100000 | gzip -c > ${sample_name}.subsample.100000.R1.fq.gz
@@ -365,7 +364,7 @@ process seqtk {
      def silva_bac_16s = "/mnt/beegfs/kimj32/tools/sortmerna/data/rRNA_databases/silva-bac-16s-id90.fasta"
      def silva_bac_23s = "/mnt/beegfs/kimj32/tools/sortmerna/data/rRNA_databases/silva-bac-23s-id98.fasta"
 
-    if(!is_SE) {
+     if(is_SE) {
      """
      sortmerna \\
      --threads ${threads} \\
